@@ -1,0 +1,5 @@
+2. Write an algorithm, which linearizes all plus nodes in an expression. A linearized plus node is a node where the left child is not a plus node.
+Figure 1: The graph on the left is the original graph of the equation (x + 1) + ((−2 + y) + sin(x)). The right graph is the linearized version of the original expression.
+Of course, the evaluation of the expression should not be altered and the linearized expression should give the same evaluation result as the original expression. For example the expression in main.cpp will be transformed to
+
+3. Write a function expr ptr from polish( std::string const& str , std::string const& separator ) to read from polish notation. That is, this function should create an expression from a string.
