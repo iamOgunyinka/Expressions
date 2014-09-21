@@ -42,7 +42,7 @@ namespace Expression
             return { str, 0.0 };
         }
     }
-    expr_ptr build_unary_operator_or_variable_from( Lexer &lex, Lexer::token_type const & token )
+    expr_ptr build_unary_operator_or_variable_from( Lexer::token_type const & token )
     {
         if( token.first.lexeme() == std::string { "cos" } ){
             return make_cos( nullptr );
@@ -54,13 +54,13 @@ namespace Expression
         }
     }
     
-    expr_ptr convert_token_to_expression( Lexer &lex, Lexer::token_type const & token )
+    expr_ptr convert_token_to_expression( Lexer::token_type const & token )
     {
         switch( token.second ){
             case expression_type::None: default:        return nullptr;
             case expression_type::Constant:             return make_constant( to_double( token.first.lexeme() ) );
             case expression_type::Variable:
-            case expression_type::UnaryFunc:            return build_unary_operator_or_variable_from( lex, token );
+            case expression_type::UnaryFunc:            return build_unary_operator_or_variable_from( token );
             case expression_type::Plus:                 return make_plus( nullptr, nullptr );
             case expression_type::Minus:                return make_minus( nullptr, nullptr );
             case expression_type::Divides:              return make_divided( nullptr, nullptr );
@@ -69,7 +69,7 @@ namespace Expression
     }
     inline expr_ptr get_root_node( Lexer & lex )
     {
-        return convert_token_to_expression( lex, lex.get_token() );
+        return convert_token_to_expression( lex.get_token() );
     }
     
     expr_ptr insert_child( expr_ptr node_to_insert, Lexer & lex, Lexer::token_type & token )
@@ -78,7 +78,7 @@ namespace Expression
         if( curr_ptr ){
             for( size_t i = 0; i != curr_ptr->num_children(); ++i ){
                 update_current_token( lex, token );
-                node_to_insert = convert_token_to_expression( lex, token );
+                node_to_insert = convert_token_to_expression( token );
                 curr_ptr->set_children( i, insert_child( node_to_insert, lex, token ) );
             }
         }
@@ -94,7 +94,7 @@ namespace Expression
         if( !lex.eof() ){
             for( size_t i = 0; i != root->num_children(); ++i ){
                 update_current_token( lex, token );
-                auto what_to_insert = convert_token_to_expression( lex, token );
+                auto what_to_insert = convert_token_to_expression( token );
                 root->set_children( i, insert_child( what_to_insert, lex, token ) );
             }
         }
