@@ -10,12 +10,96 @@
 #ifndef EXPRESSION_IO_H_INCLUDED
 #define EXPRESSION_IO_H_INCLUDED
 
-#include "expressions.hpp"
-#include <sstream>
+#include "lexer.hpp"
+
+using namespace EditedExpression;
 
 namespace Expression
 {
+    inline double to_double ( std::string const & str )
+    {
+        return std::stod( str );
+    }
     
+    inline void update_current_token( Lexer &lex, Lexer::token_type &token )
+    {
+        if( !lex.eof() ){
+            token = lex.get_token();
+        } else {
+            token.first.get_lexeme().clear();
+            token.second = expression_type::None;
+        }
+    }
+    inline std::pair<std::string, double> get_variable_value_pair( std::string const & str )
+    {
+        std::string::size_type found = str.find( '=' );
+        if( found != std::string::npos ){
+            return {
+                std::string { str.begin(), str.begin() + found },
+                to_double( std::string { str.begin() + found + 1, str.end() } )
+            };
+        } else {
+            return { str, 0.0 };
+        }
+    }
+    expr_ptr build_unary_operator_or_variable_from( Lexer &lex, Lexer::token_type const & token )
+    {
+        if( token.first.lexeme() == std::string { "cos" } ){
+            return make_cos( nullptr );
+        } else if( token.first.lexeme() == std::string { "sin" } ){
+            return make_sin( nullptr );
+        } else {
+            auto variable_value = get_variable_value_pair( token.first.lexeme() );
+            return make_variable<>( variable_value.first, variable_value.second );
+        }
+    }
+    
+    expr_ptr convert_token_to_expression( Lexer &lex, Lexer::token_type const & token )
+    {
+        switch( token.second ){
+            case expression_type::None: default:        return nullptr;
+            case expression_type::Constant:             return make_constant( to_double( token.first.lexeme() ) );
+            case expression_type::Variable:
+            case expression_type::UnaryFunc:            return build_unary_operator_or_variable_from( lex, token );
+            case expression_type::Plus:                 return make_plus( nullptr, nullptr );
+            case expression_type::Minus:                return make_minus( nullptr, nullptr );
+            case expression_type::Divides:              return make_divided( nullptr, nullptr );
+            case expression_type::Multiplies:           return make_multiplies( nullptr, nullptr );
+        }
+    }
+    inline expr_ptr get_root_node( Lexer & lex )
+    {
+        return convert_token_to_expression( lex, lex.get_token() );
+    }
+    
+    expr_ptr insert_child( expr_ptr node_to_insert, Lexer & lex, Lexer::token_type & token )
+    {
+        auto curr_ptr = node_to_insert;
+        if( curr_ptr ){
+            for( size_t i = 0; i != curr_ptr->num_children(); ++i ){
+                update_current_token( lex, token );
+                node_to_insert = convert_token_to_expression( lex, token );
+                curr_ptr->set_children( i, insert_child( node_to_insert, lex, token ) );
+            }
+        }
+        return curr_ptr;
+    }
+    expr_ptr from_polish( std::string const & str, std::string const & separator = "|" )
+    {
+        Lexer lex ( str );
+        Lexer::token_type token;
+        
+        expr_ptr root = get_root_node( lex );
+        
+        if( !lex.eof() ){
+            for( size_t i = 0; i != root->num_children(); ++i ){
+                update_current_token( lex, token );
+                auto what_to_insert = convert_token_to_expression( lex, token );
+                root->set_children( i, insert_child( what_to_insert, lex, token ) );
+            }
+        }
+        return root;
+    }
     inline void to_polish( std::ostream& out , const_expr_ptr e , std::string const& separator = "|" )
     {
         assert( e );
@@ -26,7 +110,7 @@ namespace Expression
             to_polish( out , e->get_children(i) , separator );
         }
     }
-
+    
     inline double process_unary_function( const_expr_ptr e );
 
     inline double evaluate_expr( double const & c )

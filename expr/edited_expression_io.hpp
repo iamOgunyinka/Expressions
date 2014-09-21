@@ -2,15 +2,95 @@
 #define EDIT_EXPRESSIONS_IO_H_INCLUDED
 
 #include <sstream>
-#include "edited_expression.hpp"
+#include "lexer.hpp"
 
-namespace EditedExpression {
-    
+namespace Expression {
+
     double evaluate_expr( const_expr_ptr ptr ){
         return ptr->get_expr_value();
     }
+    inline double to_double ( std::string const & str )
+    {
+        return std::stod( str );
+    }
     
-    inline void to_polish( std::ostream& out , const_expr_ptr e , std::string const& separator = "|" )
+    inline void update_current_token( Lexer &lex, Lexer::token_type &token )
+    {
+        if( !lex.eof() ){
+            token = lex.get_token();
+        } else {
+            token.first.get_lexeme().clear();
+            token.second = expression_type::e_none;
+        }
+    }
+    expr_ptr build_unary_operator_or_variable_from( Lexer &lex, Lexer::token_type const & token )
+    {
+        if( token.first.lexeme() == std::string { "cos" } ){
+            return make_cos( nullptr );
+        } else if( token.first.lexeme() == std::string { "sin" } ){
+            return make_sin( nullptr );
+        } else {
+            return make_variable( token.first.lexeme() );
+        }
+    }
+    expr_ptr build_binary_operator_from( Lexer::token_type const & token )
+    {
+        std::string token_kind = token.first.lexeme();
+        
+        if( token_kind == std::string { "/" } ){
+            return make_divided( nullptr, nullptr );
+        } else if ( token_kind == std::string{ "*" } ){
+            return make_multiplies( nullptr, nullptr );
+        } else if ( token_kind == std::string { "+" } ){
+            return make_plus( nullptr, nullptr );
+        } else {
+            return make_minus( nullptr, nullptr );
+        }
+    }
+    
+    expr_ptr convert_token_to_expression( Lexer &lex, Lexer::token_type const & token )
+    {
+        switch( token.second ){
+            case expression_type::e_constant:           return make_constant( to_double( token.first.lexeme() ) );
+            case expression_type::e_unary_func:
+            case expression_type::e_variable:           return build_unary_operator_or_variable_from( lex, token );
+            case expression_type::e_binary_operator:    return build_binary_operator_from( token );
+            case expression_type::e_none: default:      return nullptr;
+        }
+    }
+    inline expr_ptr get_root_node( Lexer & lex )
+    {
+        return convert_token_to_expression( lex, lex.get_token() );
+    }
+    expr_ptr insert_child( expr_ptr node_to_insert, Lexer & lex, Lexer::token_type & token )
+    {
+        auto curr_ptr = node_to_insert;
+        if( curr_ptr ){
+            for( size_t i = 0; i != curr_ptr->size(); ++i ){
+                update_current_token( lex, token );
+                node_to_insert = convert_token_to_expression( lex, token );
+                curr_ptr->set_children( i, insert_child( node_to_insert, lex, token ) );
+            }
+        }
+        return curr_ptr;
+    }
+    expr_ptr from_polish( std::string const & str, std::string const & separator = "|" )
+    {
+        Lexer lex ( str );
+        Lexer::token_type token;
+        
+        expr_ptr root = get_root_node( lex );
+        
+        if( !lex.eof() ){
+            for( size_t i = 0; i != root->size(); ++i ){
+                update_current_token( lex, token );
+                auto what_to_insert = convert_token_to_expression( lex, token );
+                root->set_children( i, insert_child( what_to_insert, lex, token ) );
+            }
+        }
+        return root;
+    }
+    inline void to_polish( std::ostream& out , const_expr_ptr e , std::string const& separator )
     {
         assert( e );
         out << e->to_string();

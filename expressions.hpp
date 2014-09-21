@@ -5,11 +5,13 @@
 #include <cassert>
 #include <cmath>
 #include <sstream>
+
 namespace Expression
 {
     
     enum expression_type
     {
+        None,
         Constant ,
         Variable ,
         Plus ,
@@ -37,8 +39,6 @@ namespace Expression
     
     using expr_ptr = expr::expr_ptr;
     using const_expr_ptr = expr::const_expr_ptr;
-    
-    
     
     class terminal_expr : public expr
     {
@@ -110,14 +110,18 @@ namespace Expression
     class variable : public terminal_expr
     {
         constant m_c;
+        std::string variable_name;
     public:
-        variable ( double const & c ): m_c ( c ) { }
+        variable ( double const & c ): m_c ( c ), variable_name( "var" + std::to_string( I ) ) { }
+        variable( std::string const & str, double const & c ): m_c ( c ), variable_name( str ) { }
+        
         double eval() const override { return m_c.eval(); }
         expression_type get_type( void ) const override { return Variable; }
-        std::string to_string( void ) const override { return std::string( "var" ) + std::to_string( I ); }
+        std::string to_string( void ) const override {
+            return m_c.eval() == 0.0 ? variable_name :
+                variable_name + "=" + std::to_string( this->eval() );
+        }
     };
-    
-    
     
     class sin_node : public unary_expr
     {
@@ -174,7 +178,9 @@ namespace Expression
     
     template< size_t I >
     expr_ptr make_variable( double const & value = 0.0 ) { return std::make_shared< variable< I > >( value ); }
-    
+
+    template<size_t I = 0>
+    expr_ptr make_variable( std::string const & str, double const &c = 0.0 ) { return std::make_shared< variable< I > >( str, c ); }
     expr_ptr make_sin( expr_ptr child ) { return std::make_shared< sin_node >( child ); }
     expr_ptr make_cos( expr_ptr child ) { return std::make_shared< cos_node >( child ); }
     expr_ptr make_plus( expr_ptr left , expr_ptr right ) { return std::make_shared< plus_node >( left , right ); }

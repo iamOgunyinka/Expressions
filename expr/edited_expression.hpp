@@ -6,10 +6,11 @@
 #include <cmath>
 #include <string>
 
-namespace EditedExpression
+namespace Expression
 {    
     enum class expression_type
     {
+        e_none,
         e_constant,
         e_variable ,
         e_binary_operator,
@@ -27,6 +28,7 @@ namespace EditedExpression
         virtual double get_expr_value() const = 0;
         virtual const_expr_ptr get_children( size_t i ) const = 0;
         virtual expr_ptr get_children( size_t i ) = 0;
+        virtual void set_children( size_t , expr_ptr e ) = 0;
         virtual expression_type get_type( void ) const = 0;
         virtual std::string to_string( void ) const = 0;
     };
@@ -41,6 +43,7 @@ namespace EditedExpression
         size_t size( void ) const override { return 0; }
         const_expr_ptr get_children( size_t i ) const override { assert( false ); return nullptr; }
         expr_ptr get_children( size_t i ) override { assert( false ); return nullptr; }
+        void set_children( size_t i , expr_ptr e ) override { assert( false ); }
     };
     
     class unary_expr : public expr
@@ -54,6 +57,7 @@ namespace EditedExpression
         const_expr_ptr get_children( size_t i ) const override { assert( i == 0 ) ;return m_child; }
         expr_ptr get_children( size_t i ) override { assert( i == 0 ) ;return m_child; }
         double get_expr_value () const override { return m_child->get_expr_value(); }
+        void set_children( size_t i , expr_ptr e ) override { assert( i == 0 ); m_child = e; }
     protected:
     
         expr_ptr m_child;
@@ -70,7 +74,8 @@ namespace EditedExpression
         size_t size( void ) const override { return 2; }
         const_expr_ptr get_children( size_t i ) const override { assert( i < 2 ); return m_children[i]; }
         expr_ptr get_children( size_t i ) override { assert( i < 2 ); return m_children[i]; }        
-        
+        void set_children( size_t i , expr_ptr e ) override { assert( i < 2 ); m_children[i] = e; }
+
     protected:
        
         expr_ptr m_children[2];
@@ -144,9 +149,13 @@ namespace EditedExpression
     
     expr_ptr make_constant( double c ) { return std::make_shared< constant >( c ); }
     template< size_t I = 0>
-    expr_ptr make_variable( double const & c = 0.0 ) { return std::make_shared< variable< I > >( c ); }
+    expr_ptr make_variable( std::string const & str = "var", double const & c = 0.0 ) { return std::make_shared< variable< I > >( str, c ); }
+
+    template< size_t I = 0>
+    expr_ptr make_variable( double const & c ) { return std::make_shared< variable< I > >( c ); }
+
     
-    expr_ptr make_variable( std::string const & str, double const & a ) { return std::make_shared< variable<> >( str, a ); }
+    expr_ptr make_variable( std::string const & str, double const & a = 0.0 ) { return std::make_shared< variable<> >( str, a ); }
     
     expr_ptr make_sin( expr_ptr child ) { return std::make_shared< sin_node >( child ); }
     expr_ptr make_cos( expr_ptr child ) { return std::make_shared< cos_node >( child ); }
@@ -156,4 +165,5 @@ namespace EditedExpression
     expr_ptr make_divided( expr_ptr left , expr_ptr right ) { return std::make_shared<binary_op_node<'/'> >( left , right ); }
     
 } //namespace Expression
+
 #endif // EXPRESSIONS_H_INCLUDED
