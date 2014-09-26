@@ -10,7 +10,7 @@ namespace EditedExpression
         struct is_alphabet
         {
             inline bool operator() ( int const & ch ) {
-                return ( ch >= 'a' && ch <= 'z' ) || ( ch >= 'A' && ch <= 'Z' ) || ( ch == '_' || ch == '=');
+                return ( ch >= 'a' && ch <= 'z' ) || ( ch >= 'A' && ch <= 'Z' ) || ch == '_';
             }
         };
         struct is_numeric_constant
@@ -25,6 +25,14 @@ namespace EditedExpression
                 return ( is_alphabet{}( ch ) || is_numeric_constant{}( ch ) );
             }
         };
+        [[noreturn]] void panic( std::string const & str, int const & column ){
+            std::string space ( column - 1, ' ' );
+            printf( "Invalid expression near column: %d\n", column );
+            puts( str.c_str() );
+            printf( "%s^\n", space.c_str() );
+
+            std::exit( -1 );
+        }
     } // Functions
 
     constexpr size_t EOF_F = -1;
@@ -100,8 +108,7 @@ namespace EditedExpression
                     if( current_character == '.' && !dot_found ){
                         dot_found = true;
                     } else if ( current_character == '.' ){
-                        update_current_token();
-                        continue;
+                        panic( str_lex, current_index );
                     }
                     str_buf.push_back( current_character );
                     update_current_token();

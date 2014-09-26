@@ -11,6 +11,7 @@
 #define EXPRESSION_IO_H_INCLUDED
 
 #include "lexer.hpp"
+#include <sstream>
 
 using namespace EditedExpression;
 
@@ -30,17 +31,20 @@ namespace Expression
             token.second = expression_type::None;
         }
     }
-    inline std::pair<std::string, double> get_variable_value_pair( std::string const & str )
+    
+/*
+ * 
+ * name: get_index_from
+ * @param: string
+ * @return: integer
+ * This function is an hack, why? Making variable requires a compile-time template parameter constant I, extracting the index from a
+ * polish notation, such as var0, requires a runtime calculation in order to get the last digit 0 or 10 in case it is var10, this is
+ * why I created this function and an accompanying function make_variable_with_index( int ), which will serve as an index.
+ */
+    inline int get_index_from( std::string const & str )
     {
-        std::string::size_type found = str.find( '=' );
-        if( found != std::string::npos ){
-            return {
-                std::string { str.begin(), str.begin() + found },
-                to_double( std::string { str.begin() + found + 1, str.end() } )
-            };
-        } else {
-            return { str, 0.0 };
-        }
+        std::string::size_type found = str.find_first_of( "1234567890" );
+        return std::stoi( std::string { str.begin() + found, str.end() } );
     }
     expr_ptr build_unary_operator_or_variable_from( Lexer::token_type const & token )
     {
@@ -49,8 +53,8 @@ namespace Expression
         } else if( token.first.lexeme() == std::string { "sin" } ){
             return make_sin( nullptr );
         } else {
-            auto variable_value = get_variable_value_pair( token.first.lexeme() );
-            return make_variable<>( variable_value.first, variable_value.second );
+            unsigned int const index = get_index_from( token.first.lexeme() );
+            return make_variable_with_index<>( index );
         }
     }
     

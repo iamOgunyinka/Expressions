@@ -4,7 +4,6 @@
 #include <memory>
 #include <cassert>
 #include <cmath>
-#include <sstream>
 
 namespace Expression
 {
@@ -95,9 +94,7 @@ namespace Expression
         expression_type get_type( void ) const final { return Constant; }
         std::string to_string( void ) const final
         {
-            std::ostringstream out;
-            out << m_c;
-            return out.str();
+            return std::to_string( m_c );
         }
         
     private:
@@ -105,21 +102,29 @@ namespace Expression
         double m_c;
     };
     
+    struct context_expr_eval
+    {
+        double get ( int const & index) const noexcept
+        {
+            assert( index < 20 );
+            return elements[index];
+        }
+        virtual ~context_expr_eval() { }
+
+    private:
+        std::array<double, 20> elements { { 11.8, 15,9, 11.9, 1, 12, 12, 24, 6, 45, 45, 6 } };
+    };
     
     template< size_t I >
-    class variable : public terminal_expr
+    class variable : public terminal_expr, context_expr_eval
     {
-        constant m_c;
-        std::string variable_name;
+        int m_index;
     public:
-        variable ( double const & c ): m_c ( c ), variable_name( "var" + std::to_string( I ) ) { }
-        variable( std::string const & str, double const & c ): m_c ( c ), variable_name( str ) { }
-        
-        double eval() const override { return m_c.eval(); }
+        variable( int const & index = I ): terminal_expr {}, context_expr_eval {}, m_index { index } { }
+        double eval() const override { return context_expr_eval::get( m_index ); }
         expression_type get_type( void ) const override { return Variable; }
         std::string to_string( void ) const override {
-            return m_c.eval() == 0.0 ? variable_name :
-                variable_name + "=" + std::to_string( this->eval() );
+            return std::string { "var" + std::to_string( I ) };
         }
     };
     
@@ -176,11 +181,12 @@ namespace Expression
     
     expr_ptr make_constant( double c ) { return std::make_shared< constant >( c ); }
     
-    template< size_t I >
-    expr_ptr make_variable( double const & value = 0.0 ) { return std::make_shared< variable< I > >( value ); }
+    template< size_t I>
+    expr_ptr make_variable( ) { return std::make_shared< variable< I > >( ); }
 
-    template<size_t I = 0>
-    expr_ptr make_variable( std::string const & str, double const &c = 0.0 ) { return std::make_shared< variable< I > >( str, c ); }
+    template< size_t I = 0>
+    expr_ptr make_variable_with_index( int const & index ) { return std::make_shared< variable< I > >( index ); }
+    
     expr_ptr make_sin( expr_ptr child ) { return std::make_shared< sin_node >( child ); }
     expr_ptr make_cos( expr_ptr child ) { return std::make_shared< cos_node >( child ); }
     expr_ptr make_plus( expr_ptr left , expr_ptr right ) { return std::make_shared< plus_node >( left , right ); }
