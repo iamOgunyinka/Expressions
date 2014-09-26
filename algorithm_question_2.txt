@@ -3,8 +3,9 @@ Write an algorithm, which linearizes all plus nodes in an expression. A lineariz
 Algorithm
 =========
 
-1) Mark the top node of the graph/tree as the root node.
-2) For each left child of that node, if it is a '+' node, then adapt that child's right child as your own right child.
-3) Next assign that child's right node to be its left( by simplying shifting it over ),
-4) Assign that child's right child to be the root's right child and assign the root's right child to be that child( the original '+' ).
-5) Once you run out of right children that are '+' then move down to your own right child and repeat step 2 through 5 for every child of the selected node.
+i) Mark the top node of the graph/tree as the root node.
+ii) For each left child of that node, if it is a PLUS node, then adopt that child's right child as your own right child.
+iii) Next assign that child's right node to be its left( by simplying shifting it over ),
+iv) Assign that child's right child to be the root's right child and assign the root's right child to be that child( the original '+' ).
+v) Once you run out of right children that are '+' then move down to your own right child and repeat step 2 through 5 for every child of the selected node.
+
