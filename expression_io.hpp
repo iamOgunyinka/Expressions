@@ -12,11 +12,78 @@
 
 #include "lexer.hpp"
 #include <sstream>
+#include <deque>
 
 using namespace EditedExpression;
 
 namespace Expression
 {
+    
+    inline expr_ptr build_tree_for( expression_type const & expr_constant )
+    {
+        switch( expr_constant ){
+            case expression_type::Plus: default: return make_plus( nullptr, nullptr );
+        }
+    }
+    
+    void attach( expr_ptr const &a, std::deque<expression_type> &operator_deq, std::deque<expr_ptr> &children_deq )
+    {
+        for( size_t i = 0; i != a->num_children(); ++i ){
+            expression_type type_of_expr = a->get_children( i )->get_type();
+            if( type_of_expr == expression_type::Plus ){
+                operator_deq.push_back( type_of_expr );
+                attach( a->get_children( i ), operator_deq, children_deq );
+            } else {
+                children_deq.push_back( a->get_children( i ) );
+            }
+        }
+    }
+    
+    expr_ptr build_rightmost_tree( expr_ptr const &a, expr_ptr &node, expression_type &in )
+    {
+        expr_ptr right_tree = build_tree_for( in );
+        right_tree->set_children( 1, a );
+    
+        right_tree.swap( node );
+    
+        node->set_children( 0, right_tree );
+        in = expression_type::None;
+        return node->get_children( 1 );
+    }
+    
+    expr_ptr linearize( expr_ptr const & expression )
+    {
+        std::deque<expr_ptr> child_deq {};
+        std::deque<expression_type> op_deq { expression->get_type() };
+        
+        expr_ptr tree_to_build = nullptr, ptr = nullptr;
+        expr *x = tree_to_build.get();
+    
+        attach( expression, op_deq, child_deq );
+        while( !op_deq.empty() ){
+            if( !tree_to_build ){
+                tree_to_build = build_tree_for( op_deq.front() ); op_deq.pop_front();
+                tree_to_build->set_children( 0, child_deq.front() );
+                child_deq.pop_front();
+                
+                tree_to_build->set_children( 1, child_deq.front() );
+                child_deq.pop_front();
+                
+                ptr = tree_to_build->get_children( 1 );
+                x = tree_to_build.get();
+            } else {
+                auto foo = build_rightmost_tree( child_deq.front(), ptr, op_deq.front() );
+                op_deq.pop_front();
+                child_deq.pop_front();
+                x->set_children( 1, ptr );
+    
+                x = x->get_children( 1 ).get();
+    
+                ptr = foo;
+            }
+        }
+        return tree_to_build;
+    }
     inline double to_double ( std::string const & str )
     {
         return std::stod( str );

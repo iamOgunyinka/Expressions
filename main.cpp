@@ -40,6 +40,10 @@ int main( int argc , char *argv[] )
     
     std::cout << "Evaluation of Expr3: " << evaluate_expr( root3 ) << std::endl;
     std::cout << to_polish( root3 ) << std::endl;
+
+    auto root4 = make_plus( make_plus( make_variable<0>(), make_constant( 1 ) ), make_plus( make_plus( make_constant( -2 ), make_variable<1>() ), make_sin( make_variable<2>() )) ) ;
+    
+    std::cout << evaluate_expr( linearize( root4 ) )<< std::endl;
     return 0;
 }
 
