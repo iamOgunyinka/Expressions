@@ -39,7 +39,7 @@ namespace Expression
         }
     }
     
-    expr_ptr build_rightmost_tree( expr_ptr const &a, expr_ptr &node, expression_type &in )
+    expr_ptr build_rightmost_tree( expr_ptr const &a, expr_ptr &node, expression_type in )
     {
         expr_ptr right_tree = build_tree_for( in );
         right_tree->set_children( 1, a );
@@ -47,7 +47,6 @@ namespace Expression
         right_tree.swap( node );
     
         node->set_children( 0, right_tree );
-        in = expression_type::None;
         return node->get_children( 1 );
     }
     
