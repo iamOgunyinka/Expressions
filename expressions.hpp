@@ -124,7 +124,7 @@ namespace Expression
         double eval() const override { return context_expr_eval::get( m_index ); }
         expression_type get_type( void ) const override { return Variable; }
         std::string to_string( void ) const override {
-            return std::string { "var" + std::to_string( I ) };
+            return std::string { "var" + std::to_string( m_index ) };
         }
     };
     
